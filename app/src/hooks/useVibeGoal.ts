@@ -103,11 +103,13 @@ export function useVibeGoal() {
   async function fetchMatch(matchAccountPubkey: string) {
     if (!program) return null;
     try {
-      const acc = await program.account["matchAccount"].fetch(
-        new PublicKey(matchAccountPubkey)
-      );
+      // Try both casing variants — Anchor v0.30 uses camelCase of the struct name
+      const acc = await (
+        program.account["matchAccount"] ?? program.account["MatchAccount"]
+      ).fetch(new PublicKey(matchAccountPubkey));
       return acc;
-    } catch {
+    } catch (e) {
+      console.error("fetchMatch error", e);
       return null;
     }
   }
@@ -126,9 +128,13 @@ export function useVibeGoal() {
       PROGRAM_ID
     );
     try {
-      const acc = await program.account["prediction"].fetch(predPda);
+      // Try both casing variants
+      const acc = await (
+        program.account["prediction"] ?? program.account["Prediction"]
+      ).fetch(predPda);
       return { ...acc, pda: predPda.toBase58() };
-    } catch {
+    } catch (e) {
+      console.error("fetchPrediction error", e);
       return null;
     }
   }

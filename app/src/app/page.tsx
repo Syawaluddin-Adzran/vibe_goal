@@ -52,9 +52,9 @@ export default function Home() {
         <p>
           VibeGoal &mdash; Built on{" "}
           <a href="https://solana.com" target="_blank" rel="noreferrer">Solana</a>
-          {" "}devnet &bull; Program:{" "}
+          {" "}{process.env.NEXT_PUBLIC_CLUSTER || "localnet"} &bull; Program:{" "}
           <a
-            href="https://explorer.solana.com/address/9VfRKuNCy8mNHnWYq8N3C9a4sPaJ98szckyf3vVHRzGu?cluster=devnet"
+            href={`https://explorer.solana.com/address/9VfRKuNCy8mNHnWYq8N3C9a4sPaJ98szckyf3vVHRzGu?cluster=${process.env.NEXT_PUBLIC_CLUSTER || "custom&customUrl=http://127.0.0.1:8899"}`}
             target="_blank"
             rel="noreferrer"
           >

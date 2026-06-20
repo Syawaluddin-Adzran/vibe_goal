@@ -5,24 +5,26 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useVibeGoal } from "../hooks/useVibeGoal";
 
 export default function ResultsTab() {
-  const { connected, publicKey } = useWallet();
+  const { connected } = useWallet();
   const { fetchPrediction, checkPrediction } = useVibeGoal();
 
-  const [matchId, setMatchId] = useState("");
+  const [matchId, setMatchId] = useState("1");
   const [matchAccount, setMatchAccount] = useState("");
   const [prediction, setPrediction] = useState<any>(null);
   const [status, setStatus] = useState<{ type: "success" | "error" | "loading"; msg: string } | null>(null);
 
   async function handleFetch(e: React.FormEvent) {
     e.preventDefault();
-    setStatus({ type: "loading", msg: "Fetching prediction..." });
+    setPrediction(null);
+    setStatus({ type: "loading", msg: "Fetching your prediction..." });
     try {
-      const pred = await fetchPrediction(parseInt(matchId));
+      const id = parseInt(matchId);
+      const pred = await fetchPrediction(id);
+      console.log("fetchPrediction result:", pred);
       if (!pred) {
-        setStatus({ type: "error", msg: "No prediction found for this match." });
-        setPrediction(null);
+        setStatus({ type: "error", msg: `No prediction found for Match #${id} from your wallet.` });
       } else {
-        setPrediction(pred);
+        setPrediction({ ...pred, _account: matchAccount, _matchId: id });
         setStatus(null);
       }
     } catch (e: any) {
@@ -30,19 +32,19 @@ export default function ResultsTab() {
     }
   }
 
-  async function handleCheck() {
-    if (!matchAccount) {
-      setStatus({ type: "error", msg: "Enter the match account address to verify." });
+  async function handleVerify() {
+    if (!prediction?._account) {
+      setStatus({ type: "error", msg: "Match account address is required." });
       return;
     }
     setStatus({ type: "loading", msg: "Verifying prediction on-chain..." });
     try {
-      await checkPrediction(parseInt(matchId), matchAccount);
-      const pred = await fetchPrediction(parseInt(matchId));
-      setPrediction(pred);
-      setStatus({ type: "success", msg: "Prediction verified on-chain!" });
+      await checkPrediction(prediction._matchId, prediction._account);
+      const pred = await fetchPrediction(prediction._matchId);
+      setPrediction({ ...pred, _account: prediction._account, _matchId: prediction._matchId });
+      setStatus({ type: "success", msg: "Verified on-chain!" });
     } catch (e: any) {
-      setStatus({ type: "error", msg: e?.message || "Verification failed" });
+      setStatus({ type: "error", msg: e?.message || "Verification failed — has the admin set the result yet?" });
     }
   }
 
@@ -58,31 +60,32 @@ export default function ResultsTab() {
   return (
     <div>
       <div className="card">
-        <h2>🔍 Look Up Your Prediction</h2>
+        <h2>🔍 Check My Prediction</h2>
         <form onSubmit={handleFetch}>
           <label>Match ID</label>
           <input
             className="input"
             type="number"
-            placeholder="e.g. 1"
             value={matchId}
-            onChange={(e) => setMatchId(e.target.value)}
+            onChange={e => setMatchId(e.target.value)}
             required
           />
-          <label>Match Account Address (to verify result)</label>
+          <label>Match Account Address</label>
           <input
             className="input"
             type="text"
-            placeholder="Optional — needed for on-chain verification"
+            placeholder="Paste match account address e.g. 4FBeqYcD..."
             value={matchAccount}
-            onChange={(e) => setMatchAccount(e.target.value)}
+            onChange={e => setMatchAccount(e.target.value)}
+            required
           />
-          <button className="btn btn-primary" type="submit">
-            Fetch Prediction
+          <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>
+            Fetch My Prediction
           </button>
         </form>
+
         {status && (
-          <div className={`status-msg ${status.type}`}>
+          <div className={`status-msg ${status.type}`} style={{ marginTop: "0.75rem" }}>
             {status.type === "loading" && "⏳ "}
             {status.type === "success" && "✅ "}
             {status.type === "error" && "❌ "}
@@ -93,46 +96,50 @@ export default function ResultsTab() {
 
       {prediction && (
         <div className="card">
-          <h2>📋 Your Prediction</h2>
+          <h2>🏆 Your Prediction</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "var(--muted)" }}>Match ID</span>
-              <strong>#{prediction.matchId?.toString()}</strong>
+              <strong>#{prediction._matchId}</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "var(--muted)" }}>Your Prediction</span>
-              <strong style={{ fontSize: "1.3rem" }}>
+              <strong style={{ fontSize: "1.4rem", color: "var(--accent)" }}>
                 {prediction.homePred} — {prediction.awayPred}
               </strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "var(--muted)" }}>Result</span>
+              <span style={{ color: "var(--muted)" }}>Verdict</span>
               {prediction.isCorrect
-                ? <span className="badge badge-green">✅ Correct!</span>
-                : <span className="badge badge-yellow">⏳ Pending or Incorrect</span>
+                ? <span className="badge badge-green" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>🎉 Correct!</span>
+                : <span className="badge badge-yellow" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>⏳ Not verified yet</span>
               }
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "var(--muted)" }}>PDA</span>
+              <span style={{ color: "var(--muted)" }}>On-chain PDA</span>
               <a
-                href={`https://explorer.solana.com/address/${prediction.pda}?cluster=devnet`}
+                href={`https://explorer.solana.com/address/${prediction.pda}?cluster=custom&customUrl=http://127.0.0.1:8899`}
                 target="_blank"
                 rel="noreferrer"
                 style={{ fontSize: "0.8rem" }}
               >
-                {prediction.pda?.slice(0, 12)}...
+                {prediction.pda?.slice(0, 16)}... ↗
               </a>
             </div>
           </div>
 
-          {!prediction.isCorrect && matchAccount && (
+          {!prediction.isCorrect && (
             <button
               className="btn btn-secondary"
-              style={{ width: "100%", marginTop: "1rem" }}
-              onClick={handleCheck}
+              style={{ width: "100%", marginTop: "1.25rem" }}
+              onClick={handleVerify}
             >
               Verify Result On-Chain
             </button>
+          )}
+
+          {prediction.isCorrect && (
+            <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "2.5rem" }}>🎉🏆🎉</div>
           )}
         </div>
       )}

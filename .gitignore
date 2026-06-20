@@ -6,3 +6,6 @@ node_modules
 test-ledger
 .yarn
 .surfpool
+app/.next/
+app/.env.local
+app/node_modules/
