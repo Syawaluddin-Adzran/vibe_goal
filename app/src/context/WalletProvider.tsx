@@ -7,11 +7,15 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
 
 require("@solana/wallet-adapter-react-ui/styles.css");
 
 const DEVNET_RPC = "https://api.devnet.solana.com";
+
+// Cast to any to avoid React 18.3 JSX type incompatibility with wallet-adapter
+const Conn = ConnectionProvider as any;
+const Wallet = WalletProvider as any;
+const Modal = WalletModalProvider as any;
 
 export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const wallets = useMemo(
@@ -20,10 +24,10 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({ children })
   );
 
   return (
-    <ConnectionProvider endpoint={DEVNET_RPC}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <Conn endpoint={DEVNET_RPC}>
+      <Wallet wallets={wallets} autoConnect>
+        <Modal>{children}</Modal>
+      </Wallet>
+    </Conn>
   );
 };
