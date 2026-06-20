@@ -11,11 +11,13 @@ export default function ResultsTab() {
   const [matchId, setMatchId] = useState("1");
   const [matchAccount, setMatchAccount] = useState("");
   const [prediction, setPrediction] = useState<any>(null);
+  const [verified, setVerified] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error" | "loading"; msg: string } | null>(null);
 
   async function handleFetch(e: React.FormEvent) {
     e.preventDefault();
     setPrediction(null);
+    setVerified(false);
     setStatus({ type: "loading", msg: "Fetching your prediction..." });
     try {
       const id = parseInt(matchId);
@@ -42,7 +44,8 @@ export default function ResultsTab() {
       await checkPrediction(prediction._matchId, prediction._account);
       const pred = await fetchPrediction(prediction._matchId);
       setPrediction({ ...pred, _account: prediction._account, _matchId: prediction._matchId });
-      setStatus({ type: "success", msg: "Verified on-chain!" });
+      setVerified(true);
+      setStatus(null);
     } catch (e: any) {
       setStatus({ type: "error", msg: e?.message || "Verification failed — has the admin set the result yet?" });
     }
@@ -110,9 +113,11 @@ export default function ResultsTab() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: "var(--muted)" }}>Verdict</span>
-              {prediction.isCorrect
-                ? <span className="badge badge-green" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>🎉 Correct!</span>
-                : <span className="badge badge-yellow" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>⏳ Not verified yet</span>
+              {!verified && !prediction.isCorrect
+                ? <span className="badge badge-yellow" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>⏳ Not verified yet</span>
+                : prediction.isCorrect
+                  ? <span className="badge badge-green" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>🎉 Correct!</span>
+                  : <span className="badge badge-red" style={{ fontSize: "1rem", padding: "0.4rem 1rem" }}>❌ Wrong prediction</span>
               }
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -128,7 +133,7 @@ export default function ResultsTab() {
             </div>
           </div>
 
-          {!prediction.isCorrect && (
+          {!verified && (
             <button
               className="btn btn-secondary"
               style={{ width: "100%", marginTop: "1.25rem" }}
@@ -138,8 +143,14 @@ export default function ResultsTab() {
             </button>
           )}
 
-          {prediction.isCorrect && (
+          {verified && prediction.isCorrect && (
             <div style={{ textAlign: "center", marginTop: "1rem", fontSize: "2.5rem" }}>🎉🏆🎉</div>
+          )}
+
+          {verified && !prediction.isCorrect && (
+            <div style={{ textAlign: "center", marginTop: "1rem", color: "var(--muted)", fontSize: "0.9rem" }}>
+              Better luck next time! The result has been recorded on-chain.
+            </div>
           )}
         </div>
       )}
