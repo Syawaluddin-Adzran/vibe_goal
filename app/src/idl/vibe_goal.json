@@ -1,0 +1,101 @@
+{
+  "address": "9VfRKuNCy8mNHnWYq8N3C9a4sPaJ98szckyf3vVHRzGu",
+  "metadata": {
+    "name": "vibe_goal",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "check_prediction",
+      "discriminator": [225, 73, 161, 177, 85, 41, 199, 38],
+      "accounts": [
+        { "name": "match_account" },
+        { "name": "prediction", "writable": true }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_match",
+      "discriminator": [107, 2, 184, 145, 70, 142, 17, 165],
+      "accounts": [
+        { "name": "match_account", "writable": true, "signer": true },
+        { "name": "admin", "writable": true, "signer": true },
+        { "name": "system_program", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [{ "name": "match_id", "type": "u64" }]
+    },
+    {
+      "name": "set_result",
+      "discriminator": [242, 44, 209, 17, 54, 23, 248, 27],
+      "accounts": [
+        { "name": "match_account", "writable": true },
+        { "name": "admin", "signer": true }
+      ],
+      "args": [
+        { "name": "home_score", "type": "u8" },
+        { "name": "away_score", "type": "u8" }
+      ]
+    },
+    {
+      "name": "submit_prediction",
+      "discriminator": [193, 113, 41, 36, 160, 60, 247, 55],
+      "accounts": [
+        {
+          "name": "prediction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [112, 114, 101, 100] },
+              { "kind": "account", "path": "user" },
+              { "kind": "arg", "path": "match_id" }
+            ]
+          }
+        },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "system_program", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [
+        { "name": "match_id", "type": "u64" },
+        { "name": "home_pred", "type": "u8" },
+        { "name": "away_pred", "type": "u8" }
+      ]
+    }
+  ],
+  "accounts": [
+    { "name": "MatchAccount", "discriminator": [235, 36, 243, 39, 81, 16, 144, 87] },
+    { "name": "Prediction", "discriminator": [98, 127, 141, 187, 218, 33, 8, 14] }
+  ],
+  "errors": [
+    { "code": 6000, "name": "NotAdmin", "msg": "You are not admin" },
+    { "code": 6001, "name": "MatchNotSet", "msg": "Match result not set yet" }
+  ],
+  "types": [
+    {
+      "name": "MatchAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "match_id", "type": "u64" },
+          { "name": "admin", "type": "pubkey" },
+          { "name": "home_score", "type": { "option": "u8" } },
+          { "name": "away_score", "type": { "option": "u8" } }
+        ]
+      }
+    },
+    {
+      "name": "Prediction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "user", "type": "pubkey" },
+          { "name": "match_id", "type": "u64" },
+          { "name": "home_pred", "type": "u8" },
+          { "name": "away_pred", "type": "u8" },
+          { "name": "is_correct", "type": "bool" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+[toolchain]
+package_manager = "yarn"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+vibe_goal = "9VfRKuNCy8mNHnWYq8N3C9a4sPaJ98szckyf3vVHRzGu"
+
+[programs.localnet]
+vibe_goal = "9VfRKuNCy8mNHnWYq8N3C9a4sPaJ98szckyf3vVHRzGu"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
