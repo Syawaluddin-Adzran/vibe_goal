@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const WalletMultiButton = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -12,6 +14,38 @@ const PredictTab = dynamic(() => import("../components/PredictTab"), { ssr: fals
 const AdminTab = dynamic(() => import("../components/AdminTab"), { ssr: false });
 const ResultsTab = dynamic(() => import("../components/ResultsTab"), { ssr: false });
 
+function AutoAirdrop() {
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+  const [msg, setMsg] = useState("");
+  const airdropped = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!publicKey) return;
+    const key = publicKey.toBase58();
+    if (airdropped.current === key) return; // already airdropped this session
+    airdropped.current = key;
+
+    (async () => {
+      try {
+        const sig = await connection.requestAirdrop(publicKey, 100 * LAMPORTS_PER_SOL);
+        await connection.confirmTransaction(sig, "confirmed");
+        setMsg("✅ 100 SOL airdropped!");
+      } catch (e: any) {
+        setMsg("Airdrop failed: " + (e?.message ?? e));
+      }
+      setTimeout(() => setMsg(""), 5000);
+    })();
+  }, [publicKey, connection]);
+
+  if (!msg) return null;
+  return (
+    <span style={{ color: msg.startsWith("✅") ? "var(--accent)" : "var(--danger)", fontSize: "0.85rem" }}>
+      {msg}
+    </span>
+  );
+}
+
 export default function Home() {
   const [tab, setTab] = useState<"predict" | "results" | "admin">("predict");
 
@@ -19,7 +53,10 @@ export default function Home() {
     <>
       <nav className="nav">
         <span className="nav-logo">⚽ VibeGoal</span>
-        <WalletMultiButton />
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <AutoAirdrop />
+          <WalletMultiButton />
+        </div>
       </nav>
 
       <main className="container" style={{ paddingTop: "2rem", paddingBottom: "4rem" }}>
